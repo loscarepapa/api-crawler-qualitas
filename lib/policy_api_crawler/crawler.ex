@@ -1,7 +1,4 @@
-Application.start :hound
-
 defmodule PolicyApi.Crawl do
-
   use Hound.Helpers
   alias PolicyApi.Utils, as: H
   alias PolicyApi.Parser.Customer
@@ -9,14 +6,14 @@ defmodule PolicyApi.Crawl do
   alias PolicyApi.Parser.ComputedProperties
   alias PolicyApi.Parser.Receipts
 
+  @notFound %{id: "messageDialog"}
+
   def run(credentials, number) do
+          Hound.start_session
     with {:ok, valid_num} <- valid_number(number),
          {:ok, _message} <- login(credentials) do
-      dates = get_dates(valid_num)
-              |> parse_policy()
-      dates
+      policy_exist(valid_num)
     end
-
   end
 
   defp valid_number(number) do
@@ -29,7 +26,6 @@ defmodule PolicyApi.Crawl do
 
   defp login([key, count, pass] = _credentials) do
     try do
-      Hound.start_session
       navigate_to("https://agentes.qualitas.com.mx/cas/login?service=https%3A%2F%2Fagentes.qualitas.com.mx%2Fc%2Fportal%2Flogin")
       fill_field(find_element(:name, "agente"), "#{key}")
       fill_field(find_element(:name, "username"), "#{count}")
@@ -41,8 +37,8 @@ defmodule PolicyApi.Crawl do
     end
   end
 
-  defp get_dates(number) do
-    H.visit_and_wait_for("https://agentes.qualitas.com.mx/group/guest/escritorio-360", :class, "tabAdmin")
+  defp policy_exist(number) do
+    navigate_to("https://agentes.qualitas.com.mx/group/guest/escritorio-360")
 
     funs = [
       "showConsultaPoliza('#{number}');",
@@ -53,6 +49,23 @@ defmodule PolicyApi.Crawl do
     |> Enum.join(" ")
     |> execute_script()
 
+    H.wait_for(:id, "dialogAvisoCobranza", 50)
+
+    iframe = find_element(:id, "ifrAvisoCobranza")
+    focus_frame(iframe)
+
+    text = find_element(:id, @notFound.id)
+           |> inner_text()
+
+    focus_parent_frame()
+  cond do
+      text =~ "NO VALIDA PARA EL AGENTE" ->  %{error: "NO_EXIST_POLICY"}
+      text == "" -> get_dates() |> parse_policy()
+    end
+
+  end 
+
+  defp get_dates do
     info_html = crawl_fragment(
       %{
         modal: "dialogConsultaPoliza",
@@ -73,20 +86,8 @@ defmodule PolicyApi.Crawl do
 
   end
 
-  defp parse_policy(html) do
-    info = Info.run(html)
-    customer = %{customer: Customer.run(html)}
-    receipts = %{receipts: Receipts.run(html)}
-
-    raw_policy = info
-                 |> Map.merge(customer)
-                 |> Map.merge(receipts)
-
-    props = raw_policy |> ComputedProperties.run()
-    Map.merge(raw_policy, props)
-  end
-
   defp crawl_fragment(selectors, fragments) do
+
     H.wait_for(:id, selectors.modal, 50)
 
     iframe = find_element(:id, selectors.iframe)
@@ -97,6 +98,7 @@ defmodule PolicyApi.Crawl do
            |> Enum.join(" ")
 
     focus_parent_frame()
+
     html
   end
 
@@ -111,4 +113,16 @@ defmodule PolicyApi.Crawl do
     end
   end
 
+  defp parse_policy(html) do
+    info = Info.run(html)
+    customer = %{customer: Customer.run(html)}
+    receipts = %{receipts: Receipts.run(html)}
+
+    raw_policy = info
+                 |> Map.merge(customer)
+                 |> Map.merge(receipts)
+
+    props = raw_policy |> ComputedProperties.run()
+    Map.merge(raw_policy, props)
+  end
 end

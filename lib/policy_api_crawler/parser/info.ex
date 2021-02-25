@@ -97,7 +97,6 @@ defmodule PolicyApi.Parser.Info do
     |> Map.new
   end
 
-
   defp find_el_html(doc, props) do
     case find_el(doc, props) do
       nil -> ""
