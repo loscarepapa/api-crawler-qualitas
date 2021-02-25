@@ -5,12 +5,16 @@ defmodule PolicyApi.Crawl do
   use Hound.Helpers
   alias PolicyApi.Utils, as: H
   alias PolicyApi.Parser.Customer
+  alias PolicyApi.Parser.Info
+  alias PolicyApi.Parser.ComputedProperties
+  alias PolicyApi.Parser.Receipts
 
   def run(credentials, number) do
     with {:ok, valid_num} <- valid_number(number),
          {:ok, _message} <- login(credentials) do
-      get_dates(valid_num)
-
+      dates = get_dates(valid_num)
+              |> parse_policy()
+      dates
     end
 
   end
@@ -69,18 +73,18 @@ defmodule PolicyApi.Crawl do
 
   end
 
- # defp parse_policy(html) do
- #   info = Info.run(html)
- #   customer = %{customer: Customer.run(html)}
- #   receipts = %{receipts: Receipts.run(html)}
+  defp parse_policy(html) do
+    info = Info.run(html)
+    customer = %{customer: Customer.run(html)}
+    receipts = %{receipts: Receipts.run(html)}
 
- #   raw_policy = info
- #                |> Map.merge(customer)
- #                |> Map.merge(receipts)
+    raw_policy = info
+                 |> Map.merge(customer)
+                 |> Map.merge(receipts)
 
- #   props = raw_policy |> ComputedProperties.run()
- #   Map.merge(raw_policy, props)
- # end
+    props = raw_policy |> ComputedProperties.run()
+    Map.merge(raw_policy, props)
+  end
 
   defp crawl_fragment(selectors, fragments) do
     H.wait_for(:id, selectors.modal, 50)
@@ -105,20 +109,6 @@ defmodule PolicyApi.Crawl do
     rescue
       _ -> ""
     end
-  end
-
-
-
-  defp parse(data) do
-
-  end
-
-  defp save(data) do
-
-  end
-
-  defp return_data(data) do
-
   end
 
 end

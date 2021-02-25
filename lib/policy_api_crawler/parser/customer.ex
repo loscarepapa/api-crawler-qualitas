@@ -1,4 +1,4 @@
-defmodule PolicyApi.Parser.Customer do
+ defmodule PolicyApi.Parser.Customer do
   import Meeseeks.CSS
   import Meeseeks.XPath
 
