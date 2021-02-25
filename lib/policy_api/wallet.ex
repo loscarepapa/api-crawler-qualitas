@@ -1,0 +1,104 @@
+defmodule PolicyApi.Wallet do
+  @moduledoc """
+  The Wallet context.
+  """
+
+  import Ecto.Query, warn: false
+  alias PolicyApi.Repo
+
+  alias PolicyApi.Wallet.Policys
+
+  @doc """
+  Returns the list of policy.
+
+  ## Examples
+
+      iex> list_policy()
+      [%Policys{}, ...]
+
+  """
+  def list_policy do
+    Repo.all(Policys)
+  end
+
+  @doc """
+  Gets a single policys.
+
+  Raises `Ecto.NoResultsError` if the Policys does not exist.
+
+  ## Examples
+
+      iex> get_policys!(123)
+      %Policys{}
+
+      iex> get_policys!(456)
+      ** (Ecto.NoResultsError)
+
+  """
+  def get_policys!(id), do: Repo.get!(Policys, id)
+
+  @doc """
+  Creates a policys.
+
+  ## Examples
+
+      iex> create_policys(%{field: value})
+      {:ok, %Policys{}}
+
+      iex> create_policys(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def create_policys(attrs \\ %{}) do
+    %Policys{}
+    |> Policys.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a policys.
+
+  ## Examples
+
+      iex> update_policys(policys, %{field: new_value})
+      {:ok, %Policys{}}
+
+      iex> update_policys(policys, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_policys(%Policys{} = policys, attrs) do
+    policys
+    |> Policys.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a policys.
+
+  ## Examples
+
+      iex> delete_policys(policys)
+      {:ok, %Policys{}}
+
+      iex> delete_policys(policys)
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def delete_policys(%Policys{} = policys) do
+    Repo.delete(policys)
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking policys changes.
+
+  ## Examples
+
+      iex> change_policys(policys)
+      %Ecto.Changeset{data: %Policys{}}
+
+  """
+  def change_policys(%Policys{} = policys, attrs \\ %{}) do
+    Policys.changeset(policys, attrs)
+  end
+end
