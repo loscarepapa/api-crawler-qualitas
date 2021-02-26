@@ -2,16 +2,26 @@ defmodule PolicyApiWeb.CrawlController do
   use PolicyApiWeb, :controller
 
   alias PolicyApi.Wallet
-  alias PolicyApi.Wallet.Policys
   alias PolicyApi.Crawl
+  alias PolicyApi.Parser.To
 
   action_fallback PolicyApiWeb.FallbackController
 
   def index(conn, %{"credentials" => %{"key" => key, "count" => count, "password" => password}, "policy" => number}) do
-    dates = Crawl.run([key, count, password], number)
-    #Wallet.create_policys(dates)
+
+    dates = case Wallet.get_by_number(number) do
+      {:ok, dates} -> 
+        Task.async(fn -> 
+          Crawl.run([key, count, password], number) 
+          |> Wallet.create_policys()
+        end)
+
+        dates
+      {:error, :not_found} -> Crawl.run([key, count, password], number) |> Wallet.create_policys()
+    end
+
     conn
-    |> json(%{dates: dates})
+    |> json(%{dates: "hola"})
   end
 
   def index(conn, _params) do
