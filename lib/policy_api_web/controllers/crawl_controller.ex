@@ -9,6 +9,7 @@ defmodule PolicyApiWeb.CrawlController do
 
   def index(conn, %{"credentials" => %{"key" => key, "count" => count, "password" => password}, "policy" => number}) do
     dates = Crawl.run([key, count, password], number)
+    #Wallet.create_policys(dates)
     conn
     |> json(%{dates: dates})
   end

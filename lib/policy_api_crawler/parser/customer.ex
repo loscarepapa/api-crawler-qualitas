@@ -8,7 +8,7 @@
     selector: "#portlet-container",
     props: [
       %{
-        name: :id,
+        name: :id_customer,
         strategy: "css",
         selector: "#asegNumber",
         func: &Meeseeks.text/1

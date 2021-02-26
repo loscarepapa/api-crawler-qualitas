@@ -13,8 +13,8 @@ defmodule PolicyApi.Wallet do
 
   ## Examples
 
-      iex> list_policy()
-      [%Policys{}, ...]
+  iex> list_policy()
+  [%Policys{}, ...]
 
   """
   def list_policy do
@@ -28,25 +28,34 @@ defmodule PolicyApi.Wallet do
 
   ## Examples
 
-      iex> get_policys!(123)
-      %Policys{}
+  iex> get_policys!(123)
+  %Policys{}
 
-      iex> get_policys!(456)
-      ** (Ecto.NoResultsError)
+  iex> get_policys!(456)
+  ** (Ecto.NoResultsError)
 
   """
   def get_policys!(id), do: Repo.get!(Policys, id)
+
+  def get_by_number(number) do
+    case Repo.get_by(Policys, number: number) do
+      nil ->
+        {:error, :not_found}
+      policy ->
+        {:ok, policy}
+    end
+  end
 
   @doc """
   Creates a policys.
 
   ## Examples
 
-      iex> create_policys(%{field: value})
-      {:ok, %Policys{}}
+  iex> create_policys(%{field: value})
+  {:ok, %Policys{}}
 
-      iex> create_policys(%{field: bad_value})
-      {:error, %Ecto.Changeset{}}
+  iex> create_policys(%{field: bad_value})
+  {:error, %Ecto.Changeset{}}
 
   """
   def create_policys(attrs \\ %{}) do
@@ -60,11 +69,11 @@ defmodule PolicyApi.Wallet do
 
   ## Examples
 
-      iex> update_policys(policys, %{field: new_value})
-      {:ok, %Policys{}}
+  iex> update_policys(policys, %{field: new_value})
+  {:ok, %Policys{}}
 
-      iex> update_policys(policys, %{field: bad_value})
-      {:error, %Ecto.Changeset{}}
+  iex> update_policys(policys, %{field: bad_value})
+  {:error, %Ecto.Changeset{}}
 
   """
   def update_policys(%Policys{} = policys, attrs) do
@@ -78,11 +87,11 @@ defmodule PolicyApi.Wallet do
 
   ## Examples
 
-      iex> delete_policys(policys)
-      {:ok, %Policys{}}
+  iex> delete_policys(policys)
+  {:ok, %Policys{}}
 
-      iex> delete_policys(policys)
-      {:error, %Ecto.Changeset{}}
+  iex> delete_policys(policys)
+  {:error, %Ecto.Changeset{}}
 
   """
   def delete_policys(%Policys{} = policys) do
@@ -94,8 +103,8 @@ defmodule PolicyApi.Wallet do
 
   ## Examples
 
-      iex> change_policys(policys)
-      %Ecto.Changeset{data: %Policys{}}
+  iex> change_policys(policys)
+  %Ecto.Changeset{data: %Policys{}}
 
   """
   def change_policys(%Policys{} = policys, attrs \\ %{}) do

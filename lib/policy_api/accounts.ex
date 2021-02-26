@@ -90,13 +90,13 @@ defmodule PolicyApi.Accounts do
   end
 
   def get_by_email(email) do
-  case Repo.get_by(User, email: email) do
-    nil ->
-      {:error, :not_found}
-    user ->
-      {:ok, user}
+    case Repo.get_by(User, email: email) do
+      nil ->
+        {:error, :not_found}
+      user ->
+        {:ok, user}
+    end
   end
-end
 
   @doc """
   Returns an `%Ecto.Changeset{}` for tracking user changes.

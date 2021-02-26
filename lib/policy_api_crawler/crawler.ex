@@ -9,11 +9,27 @@ defmodule PolicyApi.Crawl do
   @notFound %{id: "messageDialog"}
 
   def run(credentials, number) do
-          Hound.start_session
-    with {:ok, valid_num} <- valid_number(number),
-         {:ok, _message} <- login(credentials) do
-      policy_exist(valid_num)
+    Hound.start_session
+
+    login? = case valid_number(number) do
+      {:ok, _valid_num} -> login(credentials) 
+      {:error, _valid_num} -> %{error: "invalid number"}
     end
+
+    policy? = case login? do
+      {:ok, _} -> policy_exist(number)
+      %{error: "invalid number"} -> %{error: "invalid number"}
+      {:error, _} -> %{error: "credentials wrongs"}
+    end
+
+    dates = case policy? do
+      {:ok, _} -> get_dates() |> parse_policy()
+      %{error: "invalid number"} -> %{error: "invalid number"}
+      {:error, "NO_EXIST_POLICY"} -> %{error: "policy no exist"}
+      %{error: "credentials wrongs"} -> %{error: "credentials wrongs"}
+      %{error: _} -> %{error: "policy no exist"}
+    end
+    dates
   end
 
   defp valid_number(number) do
@@ -31,7 +47,12 @@ defmodule PolicyApi.Crawl do
       fill_field(find_element(:name, "username"), "#{count}")
       fill_field(find_element(:name, "password"), "#{pass}")
       find_element(:name, "submit") |> click() 
-      {:ok, "credentials valids"}
+      found = visible_page_text() |> String.contains?("INFORMACIÓN")
+      if found do
+        {:ok, "credentials valids"}
+      else
+        {:error, "credentials invalids"}
+      end
     rescue
       _e in RuntimeError ->  {:error, "credentials invalids"}
     end
@@ -58,9 +79,10 @@ defmodule PolicyApi.Crawl do
            |> inner_text()
 
     focus_parent_frame()
-  cond do
-      text =~ "NO VALIDA PARA EL AGENTE" ->  %{error: "NO_EXIST_POLICY"}
-      text == "" -> get_dates() |> parse_policy()
+    cond do
+      text =~ "NO VALIDA PARA EL AGENTE" ->  {:error, "NO_EXIST_POLICY"}
+      text == "" -> {:ok, "EXIST"}
+      :true -> {:error, "NO_EXIST_POLICY"}
     end
 
   end 
@@ -115,7 +137,7 @@ defmodule PolicyApi.Crawl do
 
   defp parse_policy(html) do
     info = Info.run(html)
-    customer = %{customer: Customer.run(html)}
+    %{customer: customer} = %{customer: Customer.run(html)}
     receipts = %{receipts: Receipts.run(html)}
 
     raw_policy = info
@@ -123,6 +145,8 @@ defmodule PolicyApi.Crawl do
                  |> Map.merge(receipts)
 
     props = raw_policy |> ComputedProperties.run()
-    Map.merge(raw_policy, props)
+    customer
+    |> Map.merge(info)
+    |> Map.merge(props)
   end
 end
