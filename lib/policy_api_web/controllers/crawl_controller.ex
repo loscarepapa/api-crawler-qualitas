@@ -3,28 +3,56 @@ defmodule PolicyApiWeb.CrawlController do
 
   alias PolicyApi.Wallet
   alias PolicyApi.Crawl
-  alias PolicyApi.Parser.To
 
   action_fallback PolicyApiWeb.FallbackController
 
-  def index(conn, %{"credentials" => %{"key" => key, "count" => count, "password" => password}, "policy" => number}) do
+  def create(conn, %{"credentials" => %{"key" => key, "count" => count, "password" => password}, "policy" => policy}) do
+    dates = case Wallet.get_by_number(policy) do
+      {:ok, dates} -> dates
 
-    dates = case Wallet.get_by_number(number) do
-      {:ok, dates} -> 
-        Task.async(fn -> 
-          Crawl.run([key, count, password], number) 
-          |> Wallet.create_policys()
+      {:error, :not_found} -> 
+        {:ok, database_policy} = Wallet.create_policys(%{number: policy})
+        Task.async(fn ->
+          try do
+            crawl_policy = Crawl.run([key, count, password], policy) 
+                           |> Map.put(:sync_status, "done")
+            Wallet.update_policys(database_policy, crawl_policy)
+          rescue
+            _e in RuntimeError ->  
+              Wallet.update_policys(database_policy, %{sync_status: "fail"})
+          end
         end)
-
-        dates
-      {:error, :not_found} -> Crawl.run([key, count, password], number) |> Wallet.create_policys()
+        database_policy
     end
 
     conn
-    |> json(%{dates: "hola"})
+    |> json(dates)
   end
 
-  def index(conn, _params) do
+  def create(conn, _params) do
+    conn
+    |> json(%{error: "invalid_params"})
+  end
+
+  def show(conn, %{"id" => id}) do
+    res = case Wallet.get_by_id(id) do
+      {:ok, policy} ->  policy
+      {:error, _} -> %{error: "not found"} 
+    end
+    conn
+    |> json(res)
+  end
+
+  def show(conn, %{"number" => number}) do
+    res = case Wallet.get_by_number(number) do
+      {:ok, policy} ->  policy
+      {:error, _} -> %{error: "not found"} 
+    end
+    conn
+    |> json(res)
+  end
+
+  def show(conn, _params) do
     conn
     |> json(%{error: "invalid_params"})
   end

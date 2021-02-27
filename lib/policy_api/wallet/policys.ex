@@ -1,6 +1,7 @@
 defmodule PolicyApi.Wallet.Policys do
   use Ecto.Schema
   import Ecto.Changeset
+  @derive {Jason.Encoder, except: [:__meta__]}
 
   schema "policy" do
     field :address, :string, default: nil

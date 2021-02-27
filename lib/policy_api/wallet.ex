@@ -1,4 +1,6 @@
 defmodule PolicyApi.Wallet do
+  alias PolicyApi.Crawl
+
   @moduledoc """
   The Wallet context.
   """
@@ -37,6 +39,15 @@ defmodule PolicyApi.Wallet do
   """
   def get_policys!(id), do: Repo.get!(Policys, id)
 
+  def get_by_id(id) do
+    case Repo.get_by(Policys, id: id) do
+      nil ->
+        {:error, :not_found}
+      policy ->
+        {:ok, policy}
+    end
+  end
+
   def get_by_number(number) do
     case Repo.get_by(Policys, number: number) do
       nil ->
@@ -59,10 +70,23 @@ defmodule PolicyApi.Wallet do
 
   """
   def create_policys(attrs \\ %{}) do
-    %Policys{}
-    |> Policys.changeset(attrs)
-    |> Repo.insert()
+
+    %{number: number} = attrs
+
+    case Crawl.valid_number(number) do
+
+      {:ok, _} -> 
+        %Policys{}
+        |> Policys.changeset(attrs)
+        |> Repo.insert()
+
+      {:error, policy} -> 
+        %{error: policy}
+    end
+
+
   end
+
 
   @doc """
   Updates a policys.
@@ -96,6 +120,15 @@ defmodule PolicyApi.Wallet do
   """
   def delete_policys(%Policys{} = policys) do
     Repo.delete(policys)
+  end
+
+  def delete_by_number(number) do
+    case Repo.get_by(Policys, number: number) do
+      nil ->
+        {:error, :not_found}
+      policy ->
+        Repo.delete(policy)
+    end
   end
 
   @doc """

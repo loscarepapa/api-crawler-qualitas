@@ -9,7 +9,7 @@ defmodule PolicyApi.Crawl do
   @notFound %{id: "messageDialog"}
 
   def run(credentials, number) do
-    Hound.start_session
+    start_hound()
 
     login? = case valid_number(number) do
       {:ok, _valid_num} -> login(credentials) 
@@ -32,7 +32,7 @@ defmodule PolicyApi.Crawl do
     dates
   end
 
-  defp valid_number(number) do
+  def valid_number(number) do
     val = String.length(number)
     cond do
       val == 10 ->  {:ok, number}
@@ -40,7 +40,17 @@ defmodule PolicyApi.Crawl do
     end
   end
 
-  defp login([key, count, pass] = _credentials) do
+  def start_hound() do
+    try do
+      Hound.start_session
+    rescue
+      _e in RuntimeError -> 
+        Hound.end_session
+        start_hound() 
+    end
+  end
+
+  def login([key, count, pass] = _credentials) do
     try do
       navigate_to("https://agentes.qualitas.com.mx/cas/login?service=https%3A%2F%2Fagentes.qualitas.com.mx%2Fc%2Fportal%2Flogin")
       fill_field(find_element(:name, "agente"), "#{key}")
