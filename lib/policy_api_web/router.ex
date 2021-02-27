@@ -21,7 +21,6 @@ defmodule PolicyApiWeb.Router do
 
   scope "/", PolicyApiWeb do
     pipe_through [:api, :auth]
-    #resources "/api/policy", PolicysController, except: [:new, :edit]
     post "/api/policy/create", CrawlController, :create 
     post "/api/policy/show", CrawlController, :show
     get "/", DefaultController, :index

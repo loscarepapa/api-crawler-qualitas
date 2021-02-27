@@ -13,7 +13,7 @@ config :policy_api, PolicyApiWeb.Auth.Guardian,
 
 config :hound,
   driver: "chrome_driver",
-  port: 9516,
+  port: 9516
   #browser: "chrome_headless"
 
 
