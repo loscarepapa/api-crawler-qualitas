@@ -1,17 +1,20 @@
 defmodule PolicyApiWeb.CrawlController do
   use PolicyApiWeb, :controller
-
   alias PolicyApi.Wallet
   alias PolicyApi.Crawl
 
   action_fallback PolicyApiWeb.FallbackController
 
   def create(conn, %{"credentials" => %{"key" => key, "count" => count, "password" => password}, "policy" => policy}) do
+
     dates = case Wallet.get_by_number(policy) do
       {:ok, dates} -> dates
 
       {:error, :not_found} -> 
-        {:ok, database_policy} = Wallet.create_policys(%{number: policy})
+
+         res = Wallet.create_policys(%{number: policy})
+        {_status, database_policy} = res
+
         Task.async(fn ->
           try do
             crawl_policy = Crawl.run([key, count, password], policy) 

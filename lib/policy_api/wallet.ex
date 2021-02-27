@@ -81,7 +81,7 @@ defmodule PolicyApi.Wallet do
         |> Repo.insert()
 
       {:error, policy} -> 
-        %{error: policy}
+        {:error, policy}
     end
 
 

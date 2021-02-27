@@ -11,33 +11,16 @@ defmodule PolicyApi.Crawl do
   def run(credentials, number) do
     start_hound()
 
-    login? = case valid_number(number) do
-      {:ok, _valid_num} -> login(credentials) 
-      {:error, _valid_num} -> %{error: "invalid number"}
-    end
+    policy = number
+             |> valid_number()
+             |> login?(credentials)
+             |> policy_exist()
+             |> get_dates()
+             |> parse_policy()
+             |> download_policy(number, credentials)
 
-    policy? = case login? do
-      {:ok, _} -> policy_exist(number)
-      %{error: "invalid number"} -> %{error: "invalid number"}
-      {:error, _} -> %{error: "credentials wrongs"}
-    end
+    policy
 
-    dates = case policy? do
-      {:ok, _} -> get_dates() |> parse_policy()
-      %{error: "invalid number"} -> %{error: "invalid number"}
-      {:error, "NO_EXIST_POLICY"} -> %{error: "policy no exist"}
-      %{error: "credentials wrongs"} -> %{error: "credentials wrongs"}
-      %{error: _} -> %{error: "policy no exist"}
-    end
-    dates
-  end
-
-  def valid_number(number) do
-    val = String.length(number)
-    cond do
-      val == 10 ->  {:ok, number}
-      :true ->  {:error, number}
-    end
   end
 
   def start_hound() do
@@ -50,7 +33,17 @@ defmodule PolicyApi.Crawl do
     end
   end
 
-  def login([key, count, pass] = _credentials) do
+  def valid_number(number) do
+    val = String.length(number)
+    cond do
+      val == 10 ->  {:ok, number}
+      :true ->  {:error, number}
+    end
+  end
+
+  def login?({:error, message},_credentials) do {:error, message} end
+
+  def login?({:ok, number}, [key, count, pass] = _credentials) do
     try do
       navigate_to("https://agentes.qualitas.com.mx/cas/login?service=https%3A%2F%2Fagentes.qualitas.com.mx%2Fc%2Fportal%2Flogin")
       fill_field(find_element(:name, "agente"), "#{key}")
@@ -59,7 +52,7 @@ defmodule PolicyApi.Crawl do
       find_element(:name, "submit") |> click() 
       found = visible_page_text() |> String.contains?("INFORMACIÓN")
       if found do
-        {:ok, "credentials valids"}
+        {:ok, number}
       else
         {:error, "credentials invalids"}
       end
@@ -68,7 +61,9 @@ defmodule PolicyApi.Crawl do
     end
   end
 
-  defp policy_exist(number) do
+  defp policy_exist({:error, message}) do {:error, message} end
+
+  defp policy_exist({:ok, number}) do
     navigate_to("https://agentes.qualitas.com.mx/group/guest/escritorio-360")
 
     funs = [
@@ -89,15 +84,19 @@ defmodule PolicyApi.Crawl do
            |> inner_text()
 
     focus_parent_frame()
-    cond do
+    exist? = cond do
       text =~ "NO VALIDA PARA EL AGENTE" ->  {:error, "NO_EXIST_POLICY"}
       text == "" -> {:ok, "EXIST"}
       :true -> {:error, "NO_EXIST_POLICY"}
     end
 
+    exist?
+
   end 
 
-  defp get_dates do
+  defp get_dates({:error, message}) do {:error, message} end
+
+  defp get_dates({:ok, _}) do
     info_html = crawl_fragment(
       %{
         modal: "dialogConsultaPoliza",
@@ -114,7 +113,30 @@ defmodule PolicyApi.Crawl do
       ["portlet-container"]
     )
 
-    info_html <> customer_html
+    {:ok, info_html <> customer_html}
+
+  end
+
+  def download_policy({:error, message}) do {:error, message} end 
+  def download_policy({:ok, res}, number, [key, count, _pass] = _credentials) do 
+
+    fun = "jQuery(this)._SelectModeOfPdfDialog('https://agentes.qualitas.com.mx/" <>
+      "group/guest/poliza/-/consulta/pdf/poliza?p_p_lifecycle=2&p_p_resource_id=" <>
+    "verPdfPoliza&p_p_cacheability=cacheLevelPage&_ConsultaPolizas_WAR_ConsultaPolizasportlet_agent=" <>
+      key <>
+    "&_ConsultaPolizas_WAR_ConsultaPolizasportlet_poliza=" <>
+    number <>
+    "&_ConsultaPolizas_WAR_ConsultaPolizasportlet_username=" <>
+      count <>
+    "',{numPolicy:'"<>
+    "04#{number}000000"
+    "',agentClav:" <>
+    key <>
+    "});" 
+            require IEx;IEx.pry
+    execute_script(fun)
+
+    res
 
   end
 
@@ -145,7 +167,9 @@ defmodule PolicyApi.Crawl do
     end
   end
 
-  defp parse_policy(html) do
+  defp parse_policy({:error, message}) do {:error, message} end
+
+  defp parse_policy({:ok, html}) do
     info = Info.run(html)
     %{customer: customer} = %{customer: Customer.run(html)}
     receipts = %{receipts: Receipts.run(html)}
@@ -155,8 +179,10 @@ defmodule PolicyApi.Crawl do
                  |> Map.merge(receipts)
 
     props = raw_policy |> ComputedProperties.run()
-    customer
-    |> Map.merge(info)
-    |> Map.merge(props)
+    res = customer
+          |> Map.merge(info)
+          |> Map.merge(props)
+
+    {:ok, res}
   end
 end
