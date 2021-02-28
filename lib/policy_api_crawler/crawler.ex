@@ -16,8 +16,8 @@ defmodule PolicyApi.Crawl do
              |> login?(credentials)
              |> policy_exist()
              |> get_dates()
-             |> parse_policy()
              |> download_policy(number, credentials)
+             |> parse_policy()
 
     policy
 
@@ -118,23 +118,35 @@ defmodule PolicyApi.Crawl do
   end
 
   def download_policy({:error, message}) do {:error, message} end 
+
   def download_policy({:ok, res}, number, [key, count, _pass] = _credentials) do 
 
     fun = "jQuery(this)._SelectModeOfPdfDialog('https://agentes.qualitas.com.mx/" <>
       "group/guest/poliza/-/consulta/pdf/poliza?p_p_lifecycle=2&p_p_resource_id=" <>
-    "verPdfPoliza&p_p_cacheability=cacheLevelPage&_ConsultaPolizas_WAR_ConsultaPolizasportlet_agent=" <>
-      key <>
+        "verPdfPoliza&p_p_cacheability=cacheLevelPage&_ConsultaPolizas_WAR_ConsultaPolizasportlet_agent=" <>
+          key <>
     "&_ConsultaPolizas_WAR_ConsultaPolizasportlet_poliza=" <>
-    number <>
+      number <>
     "&_ConsultaPolizas_WAR_ConsultaPolizasportlet_username=" <>
       count <>
     "',{numPolicy:'"<>
-    "04#{number}000000"
+    "04#{number}000000" <>
     "',agentClav:" <>
-    key <>
-    "});" 
-            require IEx;IEx.pry
+      key <>
+        "});" 
+
+    focus_parent_frame()
+
+    find_element(:xpath, "/html/body/div[5]/div[1]/button") |> click() 
+
+    find_element(:id, "ifrConsultaPoliza")
+    |> focus_frame()
+
     execute_script(fun)
+    find_element(:xpath, "/html/body/div[3]/div[3]/div/button[1]") |> click() 
+
+            require IEx;IEx.pry
+
 
     res
 
