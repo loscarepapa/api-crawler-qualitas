@@ -12,8 +12,7 @@ config :policy_api, PolicyApiWeb.Auth.Guardian,
   secret_key: "tY+vtstPbJvUdaLujAUKLPZuU3GEaXT7zoW2UzCxY5jyHEZ3+3ByJ8RPgSNV1E+x"
 
 config :hound,
-  driver: "chrome_driver",
-  port: 9516
+  driver: "chrome_driver"
   #browser: "chrome_headless"
 
 

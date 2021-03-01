@@ -34,6 +34,7 @@ defmodule PolicyApi.Wallet.Policys do
     field :valid_to, :date, default: nil
     field :vehicle_description, :string, default: nil
     field :sync_status, :string, default: "processing" 
+    field :pdf, :binary 
 
     timestamps()
   end
@@ -71,7 +72,8 @@ defmodule PolicyApi.Wallet.Policys do
         :valid_from,
         :valid_to,
         :vehicle_description,
-        :sync_status])
+        :sync_status,
+      :pdf])
         |> validate_required([:number])
         |> unique_constraint(:number, number: :policy_number_index)
   end

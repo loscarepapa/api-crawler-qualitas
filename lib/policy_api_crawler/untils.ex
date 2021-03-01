@@ -29,4 +29,20 @@ defmodule PolicyApi.Utils do
   defp search_el(strategy, sel) do
     search_element(strategy, sel)
   end
+
+  def wait_for_file(name, retries \\ 10)
+
+  def wait_for_file(_, retries) when retries == 0, do: false
+
+  def wait_for_file(name, retries) do
+    :timer.sleep(1000)
+    File.read(name)
+    |> case do
+      {:ok, file} -> 
+        #File.rm_rf("./file")
+        file 
+      {:error, :enoent} -> wait_for_file(name, retries - 1) 
+    end
+  end
+
 end

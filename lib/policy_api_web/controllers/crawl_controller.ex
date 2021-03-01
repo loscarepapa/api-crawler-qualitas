@@ -8,13 +8,10 @@ defmodule PolicyApiWeb.CrawlController do
   def create(conn, %{"credentials" => %{"key" => key, "count" => count, "password" => password}, "policy" => policy}) do
 
     dates = case Wallet.get_by_number(policy) do
-      {:ok, dates} -> dates
-
+      {:ok, dates} -> dates 
       {:error, :not_found} -> 
-
          res = Wallet.create_policys(%{number: policy})
         {_status, database_policy} = res
-
         Task.async(fn ->
           try do
             crawl_policy = Crawl.run([key, count, password], policy) 
@@ -56,8 +53,9 @@ defmodule PolicyApiWeb.CrawlController do
   end
 
   def show(conn, _params) do
+    res = Wallet.list_policy()
     conn
-    |> json(%{error: "invalid_params"})
+    |> json(res)
   end
 
 end

@@ -33,6 +33,7 @@ defmodule PolicyApi.Repo.Migrations.CreatePolicy do
       add :valid_to, :date 
       add :vehicle_description, :string
       add :sync_status, :string
+      add :pdf, :bytea 
 
       unique_index(:policy, [:number])
 

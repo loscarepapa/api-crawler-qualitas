@@ -5,6 +5,7 @@ defmodule PolicyApi.Crawl do
   alias PolicyApi.Parser.Info
   alias PolicyApi.Parser.ComputedProperties
   alias PolicyApi.Parser.Receipts
+  alias PolicyApi.Parser.Pdf
 
   @notFound %{id: "messageDialog"}
 
@@ -25,7 +26,15 @@ defmodule PolicyApi.Crawl do
 
   def start_hound() do
     try do
-      Hound.start_session
+      Hound.start_session(
+        additional_capabilities: %{
+          chromeOptions: %{ "prefs" => %{
+            "plugins.always_open_pdf_externally": true,
+            "download.prompt_for_download": false, 
+            "download.default_directory": "/home/marvins/dev/elixir/policy_api/file" 
+          }}
+        }
+      )
     rescue
       _e in RuntimeError -> 
         Hound.end_session
@@ -117,9 +126,9 @@ defmodule PolicyApi.Crawl do
 
   end
 
-  def download_policy({:error, message}) do {:error, message} end 
+  defp download_policy({:error, message},_, _) do {:error, message} end 
 
-  def download_policy({:ok, res}, number, [key, count, _pass] = _credentials) do 
+  defp download_policy({:ok, res}, number, [key, count, _pass] = _credentials) do 
 
     fun = "jQuery(this)._SelectModeOfPdfDialog('https://agentes.qualitas.com.mx/" <>
       "group/guest/poliza/-/consulta/pdf/poliza?p_p_lifecycle=2&p_p_resource_id=" <>
@@ -145,11 +154,9 @@ defmodule PolicyApi.Crawl do
     execute_script(fun)
     find_element(:xpath, "/html/body/div[3]/div[3]/div/button[1]") |> click() 
 
-            require IEx;IEx.pry
+    pdf = H.wait_for_file("/home/marvins/dev/elixir/policy_api/file/poliza.pdf") |> Base.encode64
 
-
-    res
-
+    {:ok, res, pdf}
   end
 
   defp crawl_fragment(selectors, fragments) do
@@ -181,7 +188,7 @@ defmodule PolicyApi.Crawl do
 
   defp parse_policy({:error, message}) do {:error, message} end
 
-  defp parse_policy({:ok, html}) do
+  defp parse_policy({:ok, html, pdf}) do
     info = Info.run(html)
     %{customer: customer} = %{customer: Customer.run(html)}
     receipts = %{receipts: Receipts.run(html)}
@@ -194,7 +201,7 @@ defmodule PolicyApi.Crawl do
     res = customer
           |> Map.merge(info)
           |> Map.merge(props)
-
-    {:ok, res}
+          |> Map.merge(%{pdf: pdf})
+    res
   end
 end

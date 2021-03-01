@@ -23,6 +23,7 @@ defmodule PolicyApiWeb.Router do
     pipe_through [:api, :auth]
     post "/api/policy/create", CrawlController, :create 
     post "/api/policy/show", CrawlController, :show
+    get "/api/policy/show", CrawlController, :show
     get "/", DefaultController, :index
   end
   # Enables LiveDashboard only for development
